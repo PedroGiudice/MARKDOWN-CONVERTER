@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversor Markdown para PDF</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .controls {
+            background: white;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .format-controls {
+            background: #f8f9fa;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn {
+            padding: 0.6rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+
+        .btn-icon {
+            padding: 0.5rem 0.8rem;
+            background: white;
+            border: 1px solid #ddd;
+            color: #333;
+        }
+
+        .btn-icon:hover {
+            background: #f0f0f0;
+        }
+
+        .btn-icon.active {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            margin: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .panel-header {
+            background: #ecf0f1;
+            padding: 0.75rem 1rem;
+            font-weight: 600;
+            color: #2c3e50;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow: auto;
+            padding: 1rem;
+        }
+
+        #markdown-input {
+            width: 100%;
+            height: 100%;
+            border: none;
+            outline: none;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95rem;
+            resize: none;
+            line-height: 1.6;
+        }
+
+        #preview {
+            line-height: 1.6;
+            color: #333;
+        }
+
+        #preview h1, #preview h2, #preview h3 {
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        #preview h1 { font-size: 2rem; }
+        #preview h2 { font-size: 1.5rem; }
+        #preview h3 { font-size: 1.25rem; }
+
+        #preview p {
+            margin-bottom: 1rem;
+        }
+
+        #preview ul, #preview ol {
+            margin-left: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        #preview li {
+            margin-bottom: 0.5rem;
+        }
+
+        #preview code {
+            background: #f4f4f4;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+
+        #preview pre {
+            background: #f4f4f4;
+            padding: 1rem;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin-bottom: 1rem;
+        }
+
+        #preview blockquote {
+            border-left: 4px solid #3498db;
+            padding-left: 1rem;
+            margin: 1rem 0;
+            color: #555;
+        }
+
+        #preview table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+
+        #preview th, #preview td {
+            border: 1px solid #ddd;
+            padding: 0.5rem;
+            text-align: left;
+        }
+
+        #preview th {
+            background: #f4f4f4;
+            font-weight: 600;
+        }
+
+        #preview a {
+            color: #3498db;
+        }
+
+        #preview strong {
+            font-weight: 600;
+        }
+
+        #preview em {
+            font-style: italic;
+        }
+
+        .label {
+            font-size: 0.9rem;
+            color: #555;
+            font-weight: 500;
+        }
+
+        select, input[type="text"], input[type="number"], input[type="color"] {
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        #filename {
+            width: 200px;
+        }
+
+        #font-select {
+            width: 180px;
+        }
+
+        #font-size {
+            width: 70px;
+        }
+
+        #line-spacing {
+            width: 70px;
+        }
+
+        input[type="color"] {
+            width: 50px;
+            height: 38px;
+            cursor: pointer;
+        }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #print-content, #print-content * {
+                visibility: visible;
+            }
+            #print-content {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📄 Conversor Markdown para PDF</h1>
+    </div>
+
+    <div class="controls">
+        <span class="label">Nome do arquivo:</span>
+        <input type="text" id="filename" value="documento" placeholder="Nome do arquivo">
+        <button class="btn btn-primary" onclick="generatePDF()">Gerar PDF</button>
+        <button class="btn btn-secondary" onclick="clearAll()">Limpar</button>
+    </div>
+
+    <div class="format-controls">
+        <div class="control-group">
+            <span class="label">Fonte:</span>
+            <select id="font-select" onchange="updateFormatting()">
+                <option value="Arial, sans-serif">Arial</option>
+                <option value="'Century Gothic', sans-serif">Century Gothic</option>
+                <option value="'Times New Roman', serif">Times New Roman</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <span class="label">Tamanho:</span>
+            <input type="number" id="font-size" value="12" min="8" max="24" onchange="updateFormatting()">
+            <span class="label">pt</span>
+        </div>
+
+        <div class="control-group">
+            <span class="label">Cor:</span>
+            <input type="color" id="font-color" value="#333333" onchange="updateFormatting()">
+        </div>
+
+        <div class="control-group">
+            <span class="label">Alinhamento:</span>
+            <button class="btn btn-icon" id="align-left" onclick="setAlignment('left')" title="Alinhar à esquerda">
+                <span>⬅</span>
+            </button>
+            <button class="btn btn-icon" id="align-center" onclick="setAlignment('center')" title="Centralizar">
+                <span>↔</span>
+            </button>
+            <button class="btn btn-icon" id="align-right" onclick="setAlignment('right')" title="Alinhar à direita">
+                <span>➡</span>
+            </button>
+            <button class="btn btn-icon" id="align-justify" onclick="setAlignment('justify')" title="Justificar">
+                <span>⬌</span>
+            </button>
+        </div>
+
+        <div class="control-group">
+            <span class="label">Espaçamento:</span>
+            <input type="number" id="line-spacing" value="1.6" min="1" max="3" step="0.1" onchange="updateFormatting()">
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="panel">
+            <div class="panel-header">Editor Markdown</div>
+            <div class="panel-content">
+                <textarea id="markdown-input" placeholder="Digite seu Markdown aqui...
+# Título
+## Subtítulo
+
+**Negrito** e *itálico*
+
+- Item 1
+- Item 2
+
+[Link](https://exemplo.com)"></textarea>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">Preview</div>
+            <div class="panel-content">
+                <div id="preview"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const markdownInput = document.getElementById('markdown-input');
+        const preview = document.getElementById('preview');
+        let currentAlignment = 'left';
+
+        function updatePreview() {
+            const markdown = markdownInput.value;
+            preview.innerHTML = marked.parse(markdown);
+            updateFormatting();
+        }
+
+        function updateFormatting() {
+            const fontFamily = document.getElementById('font-select').value;
+            const fontSize = document.getElementById('font-size').value;
+            const fontColor = document.getElementById('font-color').value;
+            const lineSpacing = document.getElementById('line-spacing').value;
+
+            preview.style.fontFamily = fontFamily;
+            preview.style.fontSize = fontSize + 'pt';
+            preview.style.color = fontColor;
+            preview.style.lineHeight = lineSpacing;
+            preview.style.textAlign = currentAlignment;
+        }
+
+        function setAlignment(align) {
+            currentAlignment = align;
+            
+            // Atualizar botões ativos
+            document.querySelectorAll('.btn-icon').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById('align-' + align).classList.add('active');
+            
+            updateFormatting();
+        }
+
+        markdownInput.addEventListener('input', updatePreview);
+
+        async function generatePDF() {
+            const content = preview.innerHTML;
+            if (!content.trim()) {
+                alert('O editor está vazio. Digite algum conteúdo antes de gerar o PDF.');
+                return;
+            }
+
+            const filename = document.getElementById('filename').value || 'documento';
+            const fontFamily = document.getElementById('font-select').value;
+            const fontSize = document.getElementById('font-size').value;
+            const fontColor = document.getElementById('font-color').value;
+            const lineSpacing = document.getElementById('line-spacing').value;
+            
+            // Usar a API de impressão do navegador que mantém texto selecionável
+            const printWindow = window.open('', '_blank');
+            
+            const htmlContent = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <title>${filename}</title>
+                    <style>
+                        @page {
+                            margin: 2cm;
+                        }
+                        body {
+                            font-family: ${fontFamily};
+                            font-size: ${fontSize}pt;
+                            line-height: ${lineSpacing};
+                            color: ${fontColor};
+                            max-width: 21cm;
+                            margin: 0 auto;
+                            text-align: ${currentAlignment};
+                        }
+                        h1, h2, h3, h4, h5, h6 {
+                            margin-top: 1.5em;
+                            margin-bottom: 0.5em;
+                            color: ${fontColor};
+                        }
+                        h1 { font-size: ${parseInt(fontSize) + 12}pt; }
+                        h2 { font-size: ${parseInt(fontSize) + 8}pt; }
+                        h3 { font-size: ${parseInt(fontSize) + 4}pt; }
+                        p {
+                            margin-bottom: 1em;
+                        }
+                        ul, ol {
+                            margin-left: 2em;
+                            margin-bottom: 1em;
+                            text-align: left;
+                        }
+                        li {
+                            margin-bottom: 0.5em;
+                        }
+                        code {
+                            background: #f4f4f4;
+                            padding: 2px 6px;
+                            border-radius: 3px;
+                            font-family: 'Courier New', monospace;
+                        }
+                        pre {
+                            background: #f4f4f4;
+                            padding: 1em;
+                            border-radius: 4px;
+                            overflow-x: auto;
+                            margin-bottom: 1em;
+                            text-align: left;
+                        }
+                        pre code {
+                            background: none;
+                            padding: 0;
+                        }
+                        blockquote {
+                            border-left: 4px solid #3498db;
+                            padding-left: 1em;
+                            margin: 1em 0;
+                            color: ${fontColor};
+                        }
+                        table {
+                            border-collapse: collapse;
+                            width: 100%;
+                            margin-bottom: 1em;
+                        }
+                        th, td {
+                            border: 1px solid #ddd;
+                            padding: 8px;
+                            text-align: left;
+                        }
+                        th {
+                            background: #f4f4f4;
+                            font-weight: 600;
+                        }
+                        a {
+                            color: #3498db;
+                            text-decoration: none;
+                        }
+                        strong {
+                            font-weight: 600;
+                        }
+                        em {
+                            font-style: italic;
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${content}
+                </body>
+                </html>
+            `;
+            
+            printWindow.document.write(htmlContent);
+            printWindow.document.close();
+            
+            // Aguardar o carregamento e iniciar impressão
+            printWindow.onload = function() {
+                setTimeout(() => {
+                    printWindow.print();
+                }, 250);
+            };
+        }
+
+        function clearAll() {
+            if (confirm('Deseja realmente limpar todo o conteúdo?')) {
+                markdownInput.value = '';
+                preview.innerHTML = '';
+            }
+        }
+
+        // Inicializar com alinhamento à esquerda ativo
+        document.getElementById('align-left').classList.add('active');
+        updatePreview();
+    </script>
+</body>
+</html>
