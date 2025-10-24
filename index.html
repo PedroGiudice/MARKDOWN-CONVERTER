@@ -3,13 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MD2PDF - Markdown Converter</title>
+    <title>MD2PDF - Markdown Converter v2.1</title>
+
+    <!-- CDN Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/7.8.2/docx.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&family=Roboto:wght@300;400;500;700&family=Open+Sans:wght@300;400;600;700&family=Lato:wght@300;400;700&family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <style>
         * {
             margin: 0;
@@ -28,6 +35,8 @@
             --border-hover: #d4d4d4;
             --accent: #0a0a0a;
             --accent-hover: #262626;
+            --success: #22c55e;
+            --warning: #f59e0b;
             --shadow: rgba(0, 0, 0, 0.04);
             --shadow-md: rgba(0, 0, 0, 0.08);
         }
@@ -74,6 +83,30 @@
             padding: 0.25rem 0.5rem;
             background: var(--bg-tertiary);
             border-radius: 4px;
+        }
+
+        .mode-toggle {
+            display: flex;
+            gap: 0.25rem;
+            background: var(--bg-tertiary);
+            padding: 0.25rem;
+            border-radius: 8px;
+        }
+
+        .mode-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .mode-btn.active {
+            background: var(--bg-primary);
+            box-shadow: 0 1px 2px var(--shadow);
         }
 
         .toolbar {
@@ -154,6 +187,12 @@
             border-color: var(--border);
         }
 
+        .btn-success {
+            background: var(--success);
+            color: white;
+            border-color: var(--success);
+        }
+
         input[type="color"] {
             width: 48px;
             height: 36px;
@@ -162,15 +201,6 @@
             border: 1px solid var(--border);
             border-radius: 6px;
             background: var(--bg-primary);
-        }
-
-        input[type="color"]::-webkit-color-swatch-wrapper {
-            padding: 2px;
-        }
-
-        input[type="color"]::-webkit-color-swatch {
-            border: none;
-            border-radius: 3px;
         }
 
         input[type="number"] {
@@ -215,6 +245,20 @@
             font-size: 0.8rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .panel-btn {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            height: auto;
         }
 
         .panel-content {
@@ -223,7 +267,7 @@
             padding: 2rem;
         }
 
-        #markdown-input {
+        #markdown-input, #visual-editor {
             width: 100%;
             height: 100%;
             border: none;
@@ -237,22 +281,34 @@
             letter-spacing: 0.2px;
         }
 
+        #visual-editor {
+            font-family: 'Inter', sans-serif;
+            padding: 0;
+        }
+
+        #visual-editor[contenteditable="true"] {
+            outline: 2px solid transparent;
+            cursor: text;
+        }
+
+        #visual-editor[contenteditable="true"]:focus {
+            outline: 2px solid var(--accent);
+            outline-offset: -2px;
+        }
+
         #markdown-input::placeholder {
             color: var(--text-tertiary);
         }
 
-        #markdown-input::selection {
-            background: #e5e5e5;
-        }
-
-        #preview {
+        #preview, #visual-editor {
             line-height: 1.7;
             color: var(--text-primary);
             max-width: 800px;
             margin: 0 auto;
         }
 
-        #preview h1, #preview h2, #preview h3, #preview h4, #preview h5, #preview h6 {
+        #preview h1, #preview h2, #preview h3, #preview h4, #preview h5, #preview h6,
+        #visual-editor h1, #visual-editor h2, #visual-editor h3, #visual-editor h4, #visual-editor h5, #visual-editor h6 {
             margin-top: 2rem;
             margin-bottom: 1rem;
             font-weight: 600;
@@ -260,25 +316,25 @@
             color: var(--text-primary);
         }
 
-        #preview h1 { font-size: 2.25rem; margin-top: 0; }
-        #preview h2 { font-size: 1.75rem; }
-        #preview h3 { font-size: 1.5rem; }
-        #preview h4 { font-size: 1.25rem; }
+        #preview h1, #visual-editor h1 { font-size: 2.25rem; margin-top: 0; }
+        #preview h2, #visual-editor h2 { font-size: 1.75rem; }
+        #preview h3, #visual-editor h3 { font-size: 1.5rem; }
+        #preview h4, #visual-editor h4 { font-size: 1.25rem; }
 
-        #preview p {
+        #preview p, #visual-editor p {
             margin-bottom: 1rem;
         }
 
-        #preview ul, #preview ol {
+        #preview ul, #preview ol, #visual-editor ul, #visual-editor ol {
             margin-left: 1.5rem;
             margin-bottom: 1rem;
         }
 
-        #preview li {
+        #preview li, #visual-editor li {
             margin-bottom: 0.5rem;
         }
 
-        #preview code {
+        #preview code, #visual-editor code {
             background: var(--bg-tertiary);
             padding: 0.2rem 0.4rem;
             border-radius: 4px;
@@ -287,7 +343,7 @@
             color: var(--text-primary);
         }
 
-        #preview pre {
+        #preview pre, #visual-editor pre {
             background: var(--bg-tertiary);
             padding: 1.25rem;
             border-radius: 8px;
@@ -296,12 +352,12 @@
             border: 1px solid var(--border);
         }
 
-        #preview pre code {
+        #preview pre code, #visual-editor pre code {
             background: none;
             padding: 0;
         }
 
-        #preview blockquote {
+        #preview blockquote, #visual-editor blockquote {
             border-left: 3px solid var(--text-primary);
             padding-left: 1.25rem;
             margin: 1.5rem 0;
@@ -309,7 +365,7 @@
             font-style: italic;
         }
 
-        #preview table {
+        #preview table, #visual-editor table {
             border-collapse: collapse;
             width: 100%;
             margin-bottom: 1rem;
@@ -318,43 +374,43 @@
             overflow: hidden;
         }
 
-        #preview th, #preview td {
+        #preview th, #preview td, #visual-editor th, #visual-editor td {
             border: 1px solid var(--border);
             padding: 0.75rem 1rem;
             text-align: left;
         }
 
-        #preview th {
+        #preview th, #visual-editor th {
             background: var(--bg-secondary);
             font-weight: 600;
         }
 
-        #preview a {
+        #preview a, #visual-editor a {
             color: var(--text-primary);
             text-decoration: underline;
             text-decoration-color: var(--text-tertiary);
             transition: text-decoration-color 0.15s;
         }
 
-        #preview a:hover {
+        #preview a:hover, #visual-editor a:hover {
             text-decoration-color: var(--text-primary);
         }
 
-        #preview strong {
+        #preview strong, #visual-editor strong {
             font-weight: 600;
         }
 
-        #preview em {
+        #preview em, #visual-editor em {
             font-style: italic;
         }
 
-        #preview hr {
+        #preview hr, #visual-editor hr {
             border: none;
             border-top: 1px solid var(--border);
             margin: 2rem 0;
         }
 
-        #preview img {
+        #preview img, #visual-editor img {
             max-width: 100%;
             height: auto;
             border-radius: 8px;
@@ -362,6 +418,35 @@
 
         #filename {
             width: 180px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .status-bar {
+            background: var(--bg-secondary);
+            padding: 0.5rem 2rem;
+            border-top: 1px solid var(--border);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-item {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .kbd {
+            background: var(--bg-tertiary);
+            padding: 0.125rem 0.375rem;
+            border-radius: 3px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            border: 1px solid var(--border);
         }
 
         ::-webkit-scrollbar {
@@ -393,13 +478,58 @@
                 flex-direction: column;
             }
         }
+
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px var(--shadow-md);
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+
+        .notification.success {
+            border-color: var(--success);
+            background: #f0fdf4;
+        }
+
+        .notification.error {
+            border-color: #ef4444;
+            background: #fef2f2;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Selection highlight */
+        ::selection {
+            background: #fbbf24;
+            color: #000;
+        }
     </style>
 </head>
 <body>
     <div class="header">
         <div class="header-left">
             <div class="logo">MD2PDF</div>
-            <div class="version">v2.0</div>
+            <div class="version">v2.1 Pro</div>
+        </div>
+        <div class="mode-toggle">
+            <button class="mode-btn active" onclick="switchMode('markdown')" id="mode-markdown">Markdown</button>
+            <button class="mode-btn" onclick="switchMode('visual')" id="mode-visual">Visual</button>
         </div>
     </div>
 
@@ -480,21 +610,28 @@
         <div class="divider"></div>
 
         <div class="toolbar-group">
-            <button class="btn btn-secondary" onclick="applyFormatting()">Aplicar Formatação</button>
+            <button class="btn btn-success" onclick="applyFormatting()">✓ Aplicar Formatação</button>
         </div>
 
         <div style="flex: 1;"></div>
 
         <div class="toolbar-group export-group">
             <input type="text" id="filename" value="documento" placeholder="nome do arquivo">
-            <button class="btn btn-primary" onclick="generatePDF()">PDF</button>
-            <button class="btn btn-primary" onclick="generateDOCX()">DOCX</button>
+            <button class="btn btn-primary" onclick="generatePDF()">📄 PDF</button>
+            <button class="btn btn-primary" onclick="generateDOCX()">📝 DOCX</button>
         </div>
     </div>
 
-    <div class="container">
+    <!-- Markdown Mode -->
+    <div class="container" id="markdown-mode">
         <div class="panel">
-            <div class="panel-header">Editor</div>
+            <div class="panel-header">
+                <span>Editor Markdown</span>
+                <div class="panel-actions">
+                    <button class="btn btn-secondary panel-btn" onclick="undo()" title="Desfazer (Ctrl+Z)">↶</button>
+                    <button class="btn btn-secondary panel-btn" onclick="redo()" title="Refazer (Ctrl+Y)">↷</button>
+                </div>
+            </div>
             <div class="panel-content">
                 <textarea id="markdown-input" placeholder="# Título Principal
 
@@ -506,7 +643,6 @@ Escreva seu markdown aqui...
 
 - Lista item 1
 - Lista item 2
-- Lista item 3
 
 [Link](https://exemplo.com)
 
@@ -524,92 +660,374 @@ function exemplo() {
         </div>
 
         <div class="panel">
-            <div class="panel-header">Preview</div>
+            <div class="panel-header">
+                <span>Preview (Somente Leitura)</span>
+            </div>
             <div class="panel-content">
                 <div id="preview"></div>
             </div>
         </div>
     </div>
 
+    <!-- Visual Mode -->
+    <div class="container hidden" id="visual-mode">
+        <div class="panel">
+            <div class="panel-header">
+                <span>Editor Visual (WYSIWYG)</span>
+                <div class="panel-actions">
+                    <button class="btn btn-secondary panel-btn" onclick="syncFromVisual()">← Sincronizar</button>
+                </div>
+            </div>
+            <div class="panel-content">
+                <div id="visual-editor" contenteditable="true"></div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <span>Preview Final</span>
+            </div>
+            <div class="panel-content">
+                <div id="visual-preview"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="status-bar">
+        <div class="status-item">
+            <span><span class="kbd">Ctrl+Z</span> Desfazer</span>
+            <span><span class="kbd">Ctrl+Y</span> Refazer</span>
+            <span><span class="kbd">Ctrl+S</span> Salvar (TODO)</span>
+        </div>
+        <div class="status-item">
+            <span id="char-count">0 caracteres</span>
+            <span id="word-count">0 palavras</span>
+        </div>
+    </div>
+
     <script>
+        // Global state
+        let currentMode = 'markdown';
+        let undoStack = [];
+        let redoStack = [];
+        let savedSelection = null;
+        let isUpdating = false;
+
+        // DOM elements
         const markdownInput = document.getElementById('markdown-input');
         const preview = document.getElementById('preview');
+        const visualEditor = document.getElementById('visual-editor');
+        const visualPreview = document.getElementById('visual-preview');
 
-        // Update preview on input
+        // Initialize
+        function init() {
+            // Set up markdown input listener
+            markdownInput.addEventListener('input', debounce(() => {
+                if (!isUpdating) {
+                    saveToUndoStack();
+                    updatePreview();
+                    updateStats();
+                }
+            }, 300));
+
+            // Set up visual editor listener
+            visualEditor.addEventListener('input', debounce(() => {
+                if (!isUpdating) {
+                    updateVisualPreview();
+                }
+            }, 300));
+
+            // Keyboard shortcuts
+            document.addEventListener('keydown', handleKeyboardShortcuts);
+
+            // Selection save
+            markdownInput.addEventListener('mouseup', saveSelection);
+            markdownInput.addEventListener('keyup', saveSelection);
+
+            // Initial render
+            updatePreview();
+            updateStats();
+        }
+
+        // Debounce helper
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // Mode switching
+        function switchMode(mode) {
+            currentMode = mode;
+
+            if (mode === 'markdown') {
+                document.getElementById('markdown-mode').classList.remove('hidden');
+                document.getElementById('visual-mode').classList.add('hidden');
+                document.getElementById('mode-markdown').classList.add('active');
+                document.getElementById('mode-visual').classList.remove('active');
+            } else {
+                document.getElementById('markdown-mode').classList.add('hidden');
+                document.getElementById('visual-mode').classList.remove('hidden');
+                document.getElementById('mode-markdown').classList.remove('active');
+                document.getElementById('mode-visual').classList.add('active');
+                syncToVisual();
+            }
+        }
+
+        // Sync markdown to visual editor
+        function syncToVisual() {
+            const html = marked.parse(markdownInput.value);
+            visualEditor.innerHTML = html;
+            updateVisualPreview();
+        }
+
+        // Sync visual editor back to markdown (simplified)
+        function syncFromVisual() {
+            // This is a simplified version - full HTML to Markdown conversion would need a library
+            const text = visualEditor.innerText;
+            markdownInput.value = text;
+            updatePreview();
+            showNotification('Conteúdo sincronizado!', 'success');
+        }
+
+        // Update preview
         function updatePreview() {
             const markdown = markdownInput.value;
             preview.innerHTML = marked.parse(markdown);
         }
 
-        markdownInput.addEventListener('input', updatePreview);
+        // Update visual preview
+        function updateVisualPreview() {
+            visualPreview.innerHTML = visualEditor.innerHTML;
+        }
 
-        // Get selected text from textarea
-        function getSelectedText() {
+        // Update statistics
+        function updateStats() {
+            const text = markdownInput.value;
+            const chars = text.length;
+            const words = text.trim().split(/\s+/).filter(w => w.length > 0).length;
+
+            document.getElementById('char-count').textContent = `${chars} caracteres`;
+            document.getElementById('word-count').textContent = `${words} palavras`;
+        }
+
+        // Save current selection
+        function saveSelection() {
             const textarea = markdownInput;
-            const start = textarea.selectionStart;
-            const end = textarea.selectionEnd;
-            return {
-                text: textarea.value.substring(start, end),
-                start: start,
-                end: end
+            savedSelection = {
+                start: textarea.selectionStart,
+                end: textarea.selectionEnd,
+                text: textarea.value.substring(textarea.selectionStart, textarea.selectionEnd)
             };
         }
 
-        // Replace selected text
-        function replaceSelection(newText) {
+        // Restore saved selection
+        function restoreSelection() {
+            if (savedSelection && currentMode === 'markdown') {
+                markdownInput.focus();
+                markdownInput.setSelectionRange(savedSelection.start, savedSelection.end);
+            }
+        }
+
+        // Get current selection (or saved one)
+        function getSelection() {
+            if (currentMode === 'visual') {
+                return {
+                    text: window.getSelection().toString(),
+                    start: 0,
+                    end: 0
+                };
+            }
+
+            // Try to use saved selection first
+            if (savedSelection && savedSelection.text) {
+                return savedSelection;
+            }
+
+            // Otherwise get current
             const textarea = markdownInput;
-            const start = textarea.selectionStart;
-            const end = textarea.selectionEnd;
+            return {
+                text: textarea.value.substring(textarea.selectionStart, textarea.selectionEnd),
+                start: textarea.selectionStart,
+                end: textarea.selectionEnd
+            };
+        }
+
+        // Replace selection
+        function replaceSelection(newText) {
+            if (currentMode === 'visual') {
+                document.execCommand('insertHTML', false, newText);
+                updateVisualPreview();
+                return;
+            }
+
+            const textarea = markdownInput;
+            const sel = savedSelection || getSelection();
+            const start = sel.start;
+            const end = sel.end;
             const before = textarea.value.substring(0, start);
             const after = textarea.value.substring(end);
-            
+
+            isUpdating = true;
             textarea.value = before + newText + after;
             textarea.focus();
-            textarea.selectionStart = textarea.selectionEnd = start + newText.length;
-            
+            textarea.setSelectionRange(start, start + newText.length);
+
+            // Save new selection
+            savedSelection = {
+                start: start,
+                end: start + newText.length,
+                text: newText
+            };
+
             updatePreview();
+            updateStats();
+            saveToUndoStack();
+
+            setTimeout(() => {
+                isUpdating = false;
+            }, 100);
+        }
+
+        // Undo/Redo system
+        function saveToUndoStack() {
+            const currentState = markdownInput.value;
+            if (undoStack.length === 0 || undoStack[undoStack.length - 1] !== currentState) {
+                undoStack.push(currentState);
+                if (undoStack.length > 50) undoStack.shift(); // Keep max 50 states
+                redoStack = []; // Clear redo stack on new action
+            }
+        }
+
+        function undo() {
+            if (undoStack.length > 1) {
+                redoStack.push(undoStack.pop());
+                const previousState = undoStack[undoStack.length - 1];
+                isUpdating = true;
+                markdownInput.value = previousState;
+                updatePreview();
+                updateStats();
+                showNotification('Desfeito', 'success');
+                setTimeout(() => { isUpdating = false; }, 100);
+            }
+        }
+
+        function redo() {
+            if (redoStack.length > 0) {
+                const nextState = redoStack.pop();
+                undoStack.push(nextState);
+                isUpdating = true;
+                markdownInput.value = nextState;
+                updatePreview();
+                updateStats();
+                showNotification('Refeito', 'success');
+                setTimeout(() => { isUpdating = false; }, 100);
+            }
+        }
+
+        // Keyboard shortcuts
+        function handleKeyboardShortcuts(e) {
+            // Ctrl+Z - Undo
+            if (e.ctrlKey && e.key === 'z' && !e.shiftKey) {
+                e.preventDefault();
+                undo();
+            }
+
+            // Ctrl+Y or Ctrl+Shift+Z - Redo
+            if ((e.ctrlKey && e.key === 'y') || (e.ctrlKey && e.shiftKey && e.key === 'z')) {
+                e.preventDefault();
+                redo();
+            }
+
+            // Ctrl+B - Bold
+            if (e.ctrlKey && e.key === 'b') {
+                e.preventDefault();
+                applyStyle('bold');
+            }
+
+            // Ctrl+I - Italic
+            if (e.ctrlKey && e.key === 'i') {
+                e.preventDefault();
+                applyStyle('italic');
+            }
+
+            // Ctrl+U - Underline
+            if (e.ctrlKey && e.key === 'u') {
+                e.preventDefault();
+                applyStyle('underline');
+            }
         }
 
         // Apply alignment
         function applyAlignment(align) {
-            const selected = getSelectedText();
+            const selected = getSelection();
             if (!selected.text) {
-                alert('Selecione o texto no editor antes de aplicar formatação.');
+                showNotification('Selecione o texto antes de aplicar formatação.', 'error');
                 return;
             }
 
-            const wrapper = `<div style="text-align: ${align};">\n\n${selected.text}\n\n</div>`;
-            replaceSelection(wrapper);
+            if (currentMode === 'visual') {
+                document.execCommand('justify' + align.charAt(0).toUpperCase() + align.slice(1));
+                updateVisualPreview();
+            } else {
+                const wrapper = `<div style="text-align: ${align};">\n\n${selected.text}\n\n</div>`;
+                replaceSelection(wrapper);
+            }
+
+            restoreSelection();
         }
 
-        // Apply text style (bold, italic, underline)
+        // Apply text style
         function applyStyle(style) {
-            const selected = getSelectedText();
+            const selected = getSelection();
             if (!selected.text) {
-                alert('Selecione o texto no editor antes de aplicar formatação.');
+                showNotification('Selecione o texto antes de aplicar formatação.', 'error');
                 return;
             }
 
-            let wrapper;
-            switch(style) {
-                case 'bold':
-                    wrapper = `**${selected.text}**`;
-                    break;
-                case 'italic':
-                    wrapper = `*${selected.text}*`;
-                    break;
-                case 'underline':
-                    wrapper = `<u>${selected.text}</u>`;
-                    break;
+            if (currentMode === 'visual') {
+                switch(style) {
+                    case 'bold':
+                        document.execCommand('bold');
+                        break;
+                    case 'italic':
+                        document.execCommand('italic');
+                        break;
+                    case 'underline':
+                        document.execCommand('underline');
+                        break;
+                }
+                updateVisualPreview();
+            } else {
+                let wrapper;
+                switch(style) {
+                    case 'bold':
+                        wrapper = `**${selected.text}**`;
+                        break;
+                    case 'italic':
+                        wrapper = `*${selected.text}*`;
+                        break;
+                    case 'underline':
+                        wrapper = `<u>${selected.text}</u>`;
+                        break;
+                }
+                replaceSelection(wrapper);
             }
-            replaceSelection(wrapper);
+
+            restoreSelection();
         }
 
         // Apply custom formatting
         function applyFormatting() {
-            const selected = getSelectedText();
+            const selected = getSelection();
             if (!selected.text) {
-                alert('Selecione o texto no editor antes de aplicar formatação.');
+                showNotification('Selecione o texto antes de aplicar formatação.', 'error');
                 return;
             }
 
@@ -619,23 +1037,33 @@ function exemplo() {
             const color = document.getElementById('text-color').value;
             const lineSpacing = document.getElementById('line-spacing').value;
 
-            const style = `font-family: ${fontFamily}; font-size: ${fontSize}pt; font-weight: ${fontWeight}; color: ${color}; line-height: ${lineSpacing};`;
-            const wrapper = `<span style="${style}">${selected.text}</span>`;
-            
-            replaceSelection(wrapper);
+            if (currentMode === 'visual') {
+                const style = `font-family: ${fontFamily}; font-size: ${fontSize}pt; font-weight: ${fontWeight}; color: ${color}; line-height: ${lineSpacing};`;
+                const wrapper = `<span style="${style}">${selected.text}</span>`;
+                document.execCommand('insertHTML', false, wrapper);
+                updateVisualPreview();
+            } else {
+                const style = `font-family: ${fontFamily}; font-size: ${fontSize}pt; font-weight: ${fontWeight}; color: ${color}; line-height: ${lineSpacing};`;
+                const wrapper = `<span style="${style}">${selected.text}</span>`;
+                replaceSelection(wrapper);
+            }
+
+            showNotification('Formatação aplicada!', 'success');
+            restoreSelection();
         }
 
-        // Generate PDF with selectable text
+        // Generate PDF using print dialog
         function generatePDF() {
-            const content = preview.innerHTML;
+            const content = currentMode === 'markdown' ? preview.innerHTML : visualEditor.innerHTML;
+
             if (!content.trim()) {
-                alert('O editor está vazio. Digite algum conteúdo antes de gerar o PDF.');
+                showNotification('O editor está vazio. Digite algum conteúdo antes de gerar o PDF.', 'error');
                 return;
             }
 
             const filename = document.getElementById('filename').value || 'documento';
             const printWindow = window.open('', '_blank');
-            
+
             const htmlContent = `
                 <!DOCTYPE html>
                 <html>
@@ -746,64 +1174,102 @@ function exemplo() {
                 </body>
                 </html>
             `;
-            
+
             printWindow.document.write(htmlContent);
             printWindow.document.close();
-            
+
             printWindow.onload = function() {
                 setTimeout(() => {
                     printWindow.print();
                 }, 350);
             };
+
+            showNotification('Abrindo diálogo de impressão para PDF...', 'success');
         }
 
-        // Generate DOCX using docx.js
+        // Generate DOCX
         async function generateDOCX() {
             const content = markdownInput.value;
             if (!content.trim()) {
-                alert('O editor está vazio. Digite algum conteúdo antes de gerar o DOCX.');
+                showNotification('O editor está vazio. Digite algum conteúdo antes de gerar o DOCX.', 'error');
                 return;
             }
 
             const filename = document.getElementById('filename').value || 'documento';
 
             try {
-                // Parse markdown to get structured content
+                // Parse markdown to structured content
                 const lines = content.split('\n');
                 const children = [];
 
                 for (let line of lines) {
-                    line = line.trim();
-                    
-                    if (!line) {
+                    const trimmed = line.trim();
+
+                    if (!trimmed) {
                         children.push(new docx.Paragraph({ text: '' }));
                         continue;
                     }
 
                     // Headers
-                    if (line.startsWith('# ')) {
+                    if (trimmed.startsWith('# ')) {
                         children.push(new docx.Paragraph({
-                            text: line.substring(2),
+                            text: trimmed.substring(2),
                             heading: docx.HeadingLevel.HEADING_1
                         }));
-                    } else if (line.startsWith('## ')) {
+                    } else if (trimmed.startsWith('## ')) {
                         children.push(new docx.Paragraph({
-                            text: line.substring(3),
+                            text: trimmed.substring(3),
                             heading: docx.HeadingLevel.HEADING_2
                         }));
-                    } else if (line.startsWith('### ')) {
+                    } else if (trimmed.startsWith('### ')) {
                         children.push(new docx.Paragraph({
-                            text: line.substring(4),
+                            text: trimmed.substring(4),
                             heading: docx.HeadingLevel.HEADING_3
                         }));
+                    } else if (trimmed.startsWith('#### ')) {
+                        children.push(new docx.Paragraph({
+                            text: trimmed.substring(5),
+                            heading: docx.HeadingLevel.HEADING_4
+                        }));
+                    } else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+                        // Bullet list item
+                        const textRuns = parseInlineFormattingForDocx(trimmed.substring(2));
+                        children.push(new docx.Paragraph({
+                            children: textRuns,
+                            bullet: {
+                                level: 0
+                            }
+                        }));
+                    } else if (/^\d+\.\s/.test(trimmed)) {
+                        // Numbered list item
+                        const text = trimmed.replace(/^\d+\.\s/, '');
+                        const textRuns = parseInlineFormattingForDocx(text);
+                        children.push(new docx.Paragraph({
+                            children: textRuns,
+                            numbering: {
+                                reference: "my-numbering",
+                                level: 0
+                            }
+                        }));
                     } else {
-                        // Regular paragraph with basic formatting
-                        const textRuns = parseInlineFormatting(line);
+                        // Regular paragraph
+                        const textRuns = parseInlineFormattingForDocx(trimmed);
                         children.push(new docx.Paragraph({ children: textRuns }));
                     }
                 }
 
                 const doc = new docx.Document({
+                    numbering: {
+                        config: [{
+                            reference: "my-numbering",
+                            levels: [{
+                                level: 0,
+                                format: "decimal",
+                                text: "%1.",
+                                alignment: docx.AlignmentType.START
+                            }]
+                        }]
+                    },
                     sections: [{
                         properties: {},
                         children: children
@@ -812,35 +1278,79 @@ function exemplo() {
 
                 const blob = await docx.Packer.toBlob(doc);
                 saveAs(blob, `${filename}.docx`);
-                
+
+                showNotification('DOCX gerado com sucesso!', 'success');
+
             } catch (error) {
                 console.error('Erro ao gerar DOCX:', error);
-                alert('Erro ao gerar DOCX. Verifique o console para detalhes.');
+                showNotification(`Erro ao gerar DOCX: ${error.message}`, 'error');
             }
         }
 
-        // Parse inline formatting for DOCX
-        function parseInlineFormatting(text) {
+        // Parse inline formatting for DOCX (improved)
+        function parseInlineFormattingForDocx(text) {
             const runs = [];
-            
-            // Simple bold and italic parsing
-            const boldRegex = /\*\*(.*?)\*\*/g;
-            const italicRegex = /\*(.*?)\*/g;
-            
-            // For simplicity, create a single text run
-            // More sophisticated parsing would handle overlapping formats
-            let cleanText = text
-                .replace(/\*\*(.*?)\*\*/g, '$1')
-                .replace(/\*(.*?)\*/g, '$1')
-                .replace(/\[(.*?)\]\(.*?\)/g, '$1');
-            
-            runs.push(new docx.TextRun({ text: cleanText }));
-            
-            return runs;
+
+            // Remove HTML tags first
+            text = text.replace(/<[^>]*>/g, '');
+
+            // Simple parsing for bold and italic
+            // This is a simplified version - a full parser would be more complex
+            const parts = text.split(/(\*\*.*?\*\*|\*.*?\*|`.*?`)/g);
+
+            for (let part of parts) {
+                if (!part) continue;
+
+                if (part.startsWith('**') && part.endsWith('**')) {
+                    // Bold
+                    runs.push(new docx.TextRun({
+                        text: part.slice(2, -2),
+                        bold: true
+                    }));
+                } else if (part.startsWith('*') && part.endsWith('*') && !part.startsWith('**')) {
+                    // Italic
+                    runs.push(new docx.TextRun({
+                        text: part.slice(1, -1),
+                        italics: true
+                    }));
+                } else if (part.startsWith('`') && part.endsWith('`')) {
+                    // Code
+                    runs.push(new docx.TextRun({
+                        text: part.slice(1, -1),
+                        font: "Courier New"
+                    }));
+                } else {
+                    // Regular text
+                    runs.push(new docx.TextRun({ text: part }));
+                }
+            }
+
+            return runs.length > 0 ? runs : [new docx.TextRun({ text: text })];
         }
 
-        // Initialize
-        updatePreview();
+        // Show notification
+        function showNotification(message, type = 'success') {
+            // Remove existing notifications
+            document.querySelectorAll('.notification').forEach(n => n.remove());
+
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.animation = 'slideIn 0.3s ease reverse';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', init);
+
+        // Save initial state
+        window.addEventListener('load', () => {
+            saveToUndoStack();
+        });
     </script>
 </body>
 </html>
