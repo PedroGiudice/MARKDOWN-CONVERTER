@@ -57,10 +57,13 @@ try {
 
         $filepath = Join-Path $Directory $filename.TrimStart('/')
 
+        # Converte para caminho absoluto
+        $fullPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($filepath)
+
         # Verifica se arquivo existe
-        if (Test-Path $filepath -PathType Leaf) {
+        if (Test-Path $fullPath -PathType Leaf) {
             # Determina Content-Type
-            $ext = [System.IO.Path]::GetExtension($filepath)
+            $ext = [System.IO.Path]::GetExtension($fullPath)
             $contentType = switch ($ext) {
                 '.html' { 'text/html; charset=utf-8' }
                 '.css'  { 'text/css; charset=utf-8' }
@@ -80,7 +83,7 @@ try {
             }
 
             # Lê arquivo
-            $content = [System.IO.File]::ReadAllBytes($filepath)
+            $content = [System.IO.File]::ReadAllBytes($fullPath)
 
             # Envia resposta
             $response.ContentType = $contentType
