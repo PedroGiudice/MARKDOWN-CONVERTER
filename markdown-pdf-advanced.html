@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MD2PDF - Markdown Converter</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/7.8.2/docx.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&family=Roboto:wght@300;400;500;700&family=Open+Sans:wght@300;400;600;700&family=Lato:wght@300;400;700&family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #fafafa;
+            --bg-tertiary: #f5f5f5;
+            --text-primary: #0a0a0a;
+            --text-secondary: #525252;
+            --text-tertiary: #a3a3a3;
+            --border: #e5e5e5;
+            --border-hover: #d4d4d4;
+            --accent: #0a0a0a;
+            --accent-hover: #262626;
+            --shadow: rgba(0, 0, 0, 0.04);
+            --shadow-md: rgba(0, 0, 0, 0.08);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .header {
+            background: var(--bg-primary);
+            padding: 1.25rem 2rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 2px var(--shadow);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
+        }
+
+        .version {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            font-weight: 500;
+            padding: 0.25rem 0.5rem;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+        }
+
+        .toolbar {
+            background: var(--bg-primary);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+            overflow-x: auto;
+        }
+
+        .toolbar-group {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            padding: 0.5rem 0;
+        }
+
+        .toolbar-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-right: 0.25rem;
+            min-width: max-content;
+        }
+
+        .btn, select, input[type="text"], input[type="number"] {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            padding: 0.5rem 1rem;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border-radius: 6px;
+            outline: none;
+        }
+
+        .btn:hover, select:hover {
+            background: var(--bg-tertiary);
+            border-color: var(--border-hover);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+            font-weight: 600;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            border-color: var(--accent-hover);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            border-color: var(--border);
+        }
+
+        input[type="color"] {
+            width: 48px;
+            height: 36px;
+            padding: 4px;
+            cursor: pointer;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--bg-primary);
+        }
+
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 2px;
+        }
+
+        input[type="color"]::-webkit-color-swatch {
+            border: none;
+            border-radius: 3px;
+        }
+
+        input[type="number"] {
+            width: 70px;
+            text-align: center;
+        }
+
+        select {
+            min-width: 140px;
+            cursor: pointer;
+        }
+
+        .divider {
+            width: 1px;
+            height: 24px;
+            background: var(--border);
+            margin: 0 0.5rem;
+        }
+
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            gap: 1px;
+            background: var(--border);
+        }
+
+        .panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-primary);
+            overflow: hidden;
+        }
+
+        .panel-header {
+            background: var(--bg-secondary);
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow: auto;
+            padding: 2rem;
+        }
+
+        #markdown-input {
+            width: 100%;
+            height: 100%;
+            border: none;
+            outline: none;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', 'Monaco', 'Courier New', monospace;
+            font-size: 0.95rem;
+            resize: none;
+            line-height: 1.7;
+            letter-spacing: 0.2px;
+        }
+
+        #markdown-input::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        #markdown-input::selection {
+            background: #e5e5e5;
+        }
+
+        #preview {
+            line-height: 1.7;
+            color: var(--text-primary);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        #preview h1, #preview h2, #preview h3, #preview h4, #preview h5, #preview h6 {
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            line-height: 1.3;
+            color: var(--text-primary);
+        }
+
+        #preview h1 { font-size: 2.25rem; margin-top: 0; }
+        #preview h2 { font-size: 1.75rem; }
+        #preview h3 { font-size: 1.5rem; }
+        #preview h4 { font-size: 1.25rem; }
+
+        #preview p {
+            margin-bottom: 1rem;
+        }
+
+        #preview ul, #preview ol {
+            margin-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        #preview li {
+            margin-bottom: 0.5rem;
+        }
+
+        #preview code {
+            background: var(--bg-tertiary);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9em;
+            color: var(--text-primary);
+        }
+
+        #preview pre {
+            background: var(--bg-tertiary);
+            padding: 1.25rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 1rem;
+            border: 1px solid var(--border);
+        }
+
+        #preview pre code {
+            background: none;
+            padding: 0;
+        }
+
+        #preview blockquote {
+            border-left: 3px solid var(--text-primary);
+            padding-left: 1.25rem;
+            margin: 1.5rem 0;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        #preview table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 1rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        #preview th, #preview td {
+            border: 1px solid var(--border);
+            padding: 0.75rem 1rem;
+            text-align: left;
+        }
+
+        #preview th {
+            background: var(--bg-secondary);
+            font-weight: 600;
+        }
+
+        #preview a {
+            color: var(--text-primary);
+            text-decoration: underline;
+            text-decoration-color: var(--text-tertiary);
+            transition: text-decoration-color 0.15s;
+        }
+
+        #preview a:hover {
+            text-decoration-color: var(--text-primary);
+        }
+
+        #preview strong {
+            font-weight: 600;
+        }
+
+        #preview em {
+            font-style: italic;
+        }
+
+        #preview hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 2rem 0;
+        }
+
+        #preview img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+
+        #filename {
+            width: 180px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 12px;
+            height: 12px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-hover);
+            border-radius: 6px;
+            border: 3px solid var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-tertiary);
+        }
+
+        .export-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        @media (max-width: 1024px) {
+            .container {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <div class="logo">MD2PDF</div>
+            <div class="version">v2.0</div>
+        </div>
+    </div>
+
+    <div class="toolbar">
+        <div class="toolbar-group">
+            <span class="toolbar-label">Fonte</span>
+            <select id="font-family">
+                <option value="'Inter', sans-serif">Inter</option>
+                <option value="'Roboto', sans-serif">Roboto</option>
+                <option value="'Open Sans', sans-serif">Open Sans</option>
+                <option value="'Lato', sans-serif">Lato</option>
+                <option value="'Montserrat', sans-serif">Montserrat</option>
+                <option value="'IBM Plex Sans', sans-serif">IBM Plex Sans</option>
+                <option value="'Playfair Display', serif">Playfair Display</option>
+                <option value="'Times New Roman', serif">Times New Roman</option>
+                <option value="Arial, sans-serif">Arial</option>
+                <option value="'Century Gothic', sans-serif">Century Gothic</option>
+                <option value="Verdana, sans-serif">Verdana</option>
+                <option value="Georgia, serif">Georgia</option>
+                <option value="'JetBrains Mono', monospace">JetBrains Mono</option>
+                <option value="'Courier New', monospace">Courier</option>
+            </select>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="toolbar-group">
+            <span class="toolbar-label">Tamanho</span>
+            <input type="number" id="font-size" min="8" max="72" value="12">
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="toolbar-group">
+            <span class="toolbar-label">Peso</span>
+            <select id="font-weight">
+                <option value="300">Light</option>
+                <option value="400" selected>Regular</option>
+                <option value="500">Medium</option>
+                <option value="600">Semibold</option>
+                <option value="700">Bold</option>
+            </select>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="toolbar-group">
+            <span class="toolbar-label">Cor</span>
+            <input type="color" id="text-color" value="#000000">
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="toolbar-group">
+            <span class="toolbar-label">Alinhamento</span>
+            <button class="btn btn-icon" onclick="applyAlignment('left')" title="Esquerda">←</button>
+            <button class="btn btn-icon" onclick="applyAlignment('center')" title="Centro">⋮</button>
+            <button class="btn btn-icon" onclick="applyAlignment('right')" title="Direita">→</button>
+            <button class="btn btn-icon" onclick="applyAlignment('justify')" title="Justificado">≡</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="toolbar-group">
+            <span class="toolbar-label">Entrelinha</span>
+            <input type="number" id="line-spacing" min="1" max="3" step="0.1" value="1.6">
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="toolbar-group">
+            <span class="toolbar-label">Estilo</span>
+            <button class="btn btn-icon" onclick="applyStyle('bold')" title="Negrito"><strong>B</strong></button>
+            <button class="btn btn-icon" onclick="applyStyle('italic')" title="Itálico"><em>I</em></button>
+            <button class="btn btn-icon" onclick="applyStyle('underline')" title="Sublinhado"><u>U</u></button>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="toolbar-group">
+            <button class="btn btn-secondary" onclick="applyFormatting()">Aplicar Formatação</button>
+        </div>
+
+        <div style="flex: 1;"></div>
+
+        <div class="toolbar-group export-group">
+            <input type="text" id="filename" value="documento" placeholder="nome do arquivo">
+            <button class="btn btn-primary" onclick="generatePDF()">PDF</button>
+            <button class="btn btn-primary" onclick="generateDOCX()">DOCX</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="panel">
+            <div class="panel-header">Editor</div>
+            <div class="panel-content">
+                <textarea id="markdown-input" placeholder="# Título Principal
+
+Escreva seu markdown aqui...
+
+## Subtítulo
+
+**Negrito** e *itálico*
+
+- Lista item 1
+- Lista item 2
+- Lista item 3
+
+[Link](https://exemplo.com)
+
+> Citação importante
+
+\`código inline\`
+
+```javascript
+// Bloco de código
+function exemplo() {
+  return true;
+}
+```"></textarea>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">Preview</div>
+            <div class="panel-content">
+                <div id="preview"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const markdownInput = document.getElementById('markdown-input');
+        const preview = document.getElementById('preview');
+
+        // Update preview on input
+        function updatePreview() {
+            const markdown = markdownInput.value;
+            preview.innerHTML = marked.parse(markdown);
+        }
+
+        markdownInput.addEventListener('input', updatePreview);
+
+        // Get selected text from textarea
+        function getSelectedText() {
+            const textarea = markdownInput;
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            return {
+                text: textarea.value.substring(start, end),
+                start: start,
+                end: end
+            };
+        }
+
+        // Replace selected text
+        function replaceSelection(newText) {
+            const textarea = markdownInput;
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const before = textarea.value.substring(0, start);
+            const after = textarea.value.substring(end);
+            
+            textarea.value = before + newText + after;
+            textarea.focus();
+            textarea.selectionStart = textarea.selectionEnd = start + newText.length;
+            
+            updatePreview();
+        }
+
+        // Apply alignment
+        function applyAlignment(align) {
+            const selected = getSelectedText();
+            if (!selected.text) {
+                alert('Selecione o texto no editor antes de aplicar formatação.');
+                return;
+            }
+
+            const wrapper = `<div style="text-align: ${align};">\n\n${selected.text}\n\n</div>`;
+            replaceSelection(wrapper);
+        }
+
+        // Apply text style (bold, italic, underline)
+        function applyStyle(style) {
+            const selected = getSelectedText();
+            if (!selected.text) {
+                alert('Selecione o texto no editor antes de aplicar formatação.');
+                return;
+            }
+
+            let wrapper;
+            switch(style) {
+                case 'bold':
+                    wrapper = `**${selected.text}**`;
+                    break;
+                case 'italic':
+                    wrapper = `*${selected.text}*`;
+                    break;
+                case 'underline':
+                    wrapper = `<u>${selected.text}</u>`;
+                    break;
+            }
+            replaceSelection(wrapper);
+        }
+
+        // Apply custom formatting
+        function applyFormatting() {
+            const selected = getSelectedText();
+            if (!selected.text) {
+                alert('Selecione o texto no editor antes de aplicar formatação.');
+                return;
+            }
+
+            const fontFamily = document.getElementById('font-family').value;
+            const fontSize = document.getElementById('font-size').value;
+            const fontWeight = document.getElementById('font-weight').value;
+            const color = document.getElementById('text-color').value;
+            const lineSpacing = document.getElementById('line-spacing').value;
+
+            const style = `font-family: ${fontFamily}; font-size: ${fontSize}pt; font-weight: ${fontWeight}; color: ${color}; line-height: ${lineSpacing};`;
+            const wrapper = `<span style="${style}">${selected.text}</span>`;
+            
+            replaceSelection(wrapper);
+        }
+
+        // Generate PDF with selectable text
+        function generatePDF() {
+            const content = preview.innerHTML;
+            if (!content.trim()) {
+                alert('O editor está vazio. Digite algum conteúdo antes de gerar o PDF.');
+                return;
+            }
+
+            const filename = document.getElementById('filename').value || 'documento';
+            const printWindow = window.open('', '_blank');
+            
+            const htmlContent = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <title>${filename}</title>
+                    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&family=Roboto:wght@300;400;500;700&family=Open+Sans:wght@300;400;600;700&family=Lato:wght@300;400;700&family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+                    <style>
+                        @page {
+                            margin: 2.5cm;
+                            size: A4;
+                        }
+                        body {
+                            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+                            font-size: 12pt;
+                            line-height: 1.7;
+                            color: #000;
+                            max-width: 21cm;
+                            margin: 0 auto;
+                            -webkit-font-smoothing: antialiased;
+                        }
+                        h1, h2, h3, h4, h5, h6 {
+                            margin-top: 1.5em;
+                            margin-bottom: 0.75em;
+                            page-break-after: avoid;
+                            font-weight: 600;
+                            line-height: 1.3;
+                        }
+                        h1 { font-size: 28pt; margin-top: 0; }
+                        h2 { font-size: 22pt; }
+                        h3 { font-size: 18pt; }
+                        h4 { font-size: 14pt; }
+                        p {
+                            margin-bottom: 1em;
+                        }
+                        ul, ol {
+                            margin-left: 1.5rem;
+                            margin-bottom: 1em;
+                        }
+                        li {
+                            margin-bottom: 0.5em;
+                        }
+                        code {
+                            font-family: 'JetBrains Mono', 'Monaco', monospace;
+                            background: #f5f5f5;
+                            padding: 2px 6px;
+                            border-radius: 4px;
+                            font-size: 0.9em;
+                        }
+                        pre {
+                            font-family: 'JetBrains Mono', 'Monaco', monospace;
+                            background: #f5f5f5;
+                            padding: 1.25rem;
+                            border-radius: 8px;
+                            overflow-x: auto;
+                            margin-bottom: 1em;
+                            page-break-inside: avoid;
+                        }
+                        pre code {
+                            background: none;
+                            padding: 0;
+                        }
+                        blockquote {
+                            border-left: 3px solid #000;
+                            padding-left: 1.25rem;
+                            margin: 1.5rem 0;
+                            color: #525252;
+                            font-style: italic;
+                        }
+                        table {
+                            border-collapse: collapse;
+                            width: 100%;
+                            margin-bottom: 1em;
+                            page-break-inside: avoid;
+                        }
+                        th, td {
+                            border: 1px solid #e5e5e5;
+                            padding: 0.75rem 1rem;
+                            text-align: left;
+                        }
+                        th {
+                            background: #fafafa;
+                            font-weight: 600;
+                        }
+                        a {
+                            color: #000;
+                            text-decoration: underline;
+                        }
+                        strong {
+                            font-weight: 600;
+                        }
+                        em {
+                            font-style: italic;
+                        }
+                        hr {
+                            border: none;
+                            border-top: 1px solid #e5e5e5;
+                            margin: 2rem 0;
+                        }
+                        img {
+                            max-width: 100%;
+                            height: auto;
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${content}
+                </body>
+                </html>
+            `;
+            
+            printWindow.document.write(htmlContent);
+            printWindow.document.close();
+            
+            printWindow.onload = function() {
+                setTimeout(() => {
+                    printWindow.print();
+                }, 350);
+            };
+        }
+
+        // Generate DOCX using docx.js
+        async function generateDOCX() {
+            const content = markdownInput.value;
+            if (!content.trim()) {
+                alert('O editor está vazio. Digite algum conteúdo antes de gerar o DOCX.');
+                return;
+            }
+
+            const filename = document.getElementById('filename').value || 'documento';
+
+            try {
+                // Parse markdown to get structured content
+                const lines = content.split('\n');
+                const children = [];
+
+                for (let line of lines) {
+                    line = line.trim();
+                    
+                    if (!line) {
+                        children.push(new docx.Paragraph({ text: '' }));
+                        continue;
+                    }
+
+                    // Headers
+                    if (line.startsWith('# ')) {
+                        children.push(new docx.Paragraph({
+                            text: line.substring(2),
+                            heading: docx.HeadingLevel.HEADING_1
+                        }));
+                    } else if (line.startsWith('## ')) {
+                        children.push(new docx.Paragraph({
+                            text: line.substring(3),
+                            heading: docx.HeadingLevel.HEADING_2
+                        }));
+                    } else if (line.startsWith('### ')) {
+                        children.push(new docx.Paragraph({
+                            text: line.substring(4),
+                            heading: docx.HeadingLevel.HEADING_3
+                        }));
+                    } else {
+                        // Regular paragraph with basic formatting
+                        const textRuns = parseInlineFormatting(line);
+                        children.push(new docx.Paragraph({ children: textRuns }));
+                    }
+                }
+
+                const doc = new docx.Document({
+                    sections: [{
+                        properties: {},
+                        children: children
+                    }]
+                });
+
+                const blob = await docx.Packer.toBlob(doc);
+                saveAs(blob, `${filename}.docx`);
+                
+            } catch (error) {
+                console.error('Erro ao gerar DOCX:', error);
+                alert('Erro ao gerar DOCX. Verifique o console para detalhes.');
+            }
+        }
+
+        // Parse inline formatting for DOCX
+        function parseInlineFormatting(text) {
+            const runs = [];
+            
+            // Simple bold and italic parsing
+            const boldRegex = /\*\*(.*?)\*\*/g;
+            const italicRegex = /\*(.*?)\*/g;
+            
+            // For simplicity, create a single text run
+            // More sophisticated parsing would handle overlapping formats
+            let cleanText = text
+                .replace(/\*\*(.*?)\*\*/g, '$1')
+                .replace(/\*(.*?)\*/g, '$1')
+                .replace(/\[(.*?)\]\(.*?\)/g, '$1');
+            
+            runs.push(new docx.TextRun({ text: cleanText }));
+            
+            return runs;
+        }
+
+        // Initialize
+        updatePreview();
+    </script>
+</body>
+</html>
