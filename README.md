@@ -1,13 +1,23 @@
-# MD2PDF Converter v2.0
+# MD2PDF Converter v2.1 Pro
 
 Conversor avançado de Markdown para PDF e DOCX com controles profissionais de formatação em tempo real.
 
-![Version](https://img.shields.io/badge/version-2.0-blue)
+![Version](https://img.shields.io/badge/version-2.1_Pro-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## ✨ Características
 
-- ✅ **Editor Markdown** com preview em tempo real lado a lado
+- ✅ **Dois modos de edição**
+  - **Modo Markdown**: Editor puro com preview em tempo real
+  - **Modo Visual (WYSIWYG)**: Editor rico sem marcações visíveis
+- ✅ **Sistema de Undo/Redo** (Ctrl+Z/Ctrl+Y)
+  - Histórico de 50 estados
+  - Atalhos de teclado
+  - Botões visuais no editor
+- ✅ **Seleção de texto inteligente**
+  - Mantém seleção ao aplicar formatação
+  - Suporte para formatação múltipla
+  - Restauração automática de seleção
 - ✅ **14 Fontes profissionais** (Inter, Roboto, Open Sans, Lato, Montserrat, IBM Plex Sans, Playfair Display, Times New Roman, Arial, Century Gothic, Verdana, Georgia, JetBrains Mono, Courier)
 - ✅ **Controles avançados de formatação**
   - Seletor de fonte com preview
@@ -17,10 +27,13 @@ Conversor avançado de Markdown para PDF e DOCX com controles profissionais de f
   - Alinhamento (Esquerda, Centro, Direita, Justificado)
   - Espaçamento de linha (1.0 - 3.0)
   - Estilos rápidos (Negrito, Itálico, Sublinhado)
-- ✅ **Exportação profissional**
-  - PDF com texto selecionável
-  - DOCX (Microsoft Word)
+  - Atalhos de teclado (Ctrl+B, Ctrl+I, Ctrl+U)
+- ✅ **Exportação profissional melhorada**
+  - PDF com texto selecionável (bibliotecas jsPDF + html2canvas)
+  - DOCX (Microsoft Word) com suporte a listas e formatação inline
 - ✅ **Interface moderna** com design minimalista B&W
+- ✅ **Notificações visuais** de ações
+- ✅ **Barra de status** com contador de palavras e caracteres
 - ✅ **Funciona offline** após primeiro carregamento
 - ✅ **Responsivo** para diferentes tamanhos de tela
 
@@ -86,8 +99,26 @@ npx serve
 ### 1. Iniciando
 
 1. Abra o navegador em `http://localhost:8000`
-2. Digite ou cole seu Markdown no painel esquerdo (Editor)
-3. Veja o preview formatado em tempo real no painel direito
+2. Escolha o modo de edição:
+   - **Markdown**: Editor tradicional com sintaxe Markdown
+   - **Visual**: Editor WYSIWYG sem marcações visíveis
+3. Digite ou cole seu conteúdo
+4. Veja o preview formatado em tempo real
+
+### 2. Diferença entre os Modos
+
+#### Modo Markdown
+- Editor de texto puro com sintaxe Markdown
+- Preview ao vivo sem marcações HTML
+- Ideal para quem conhece Markdown
+- As formatações aplicadas inserem HTML inline
+
+#### Modo Visual (WYSIWYG)
+- Editor rico onde você edita diretamente o resultado final
+- Sem marcações visíveis (sem `**`, `#`, `<tags>`)
+- Ideal para formatação visual sem conhecer Markdown
+- Formatações aplicadas diretamente no texto
+- Botão "Sincronizar" para voltar ao modo Markdown
 
 ### 2. Formatação Básica (Markdown)
 
@@ -121,7 +152,16 @@ function exemplo() {
 ```
 ```
 
-### 3. Formatação Avançada (Controles)
+### 3. Sistema de Undo/Redo (NOVO!)
+
+O editor agora possui um sistema completo de desfazer/refazer:
+
+- **Ctrl+Z**: Desfazer última alteração
+- **Ctrl+Y**: Refazer alteração desfeita
+- **Botões ↶ ↷**: No cabeçalho do editor
+- **Histórico**: Mantém até 50 estados anteriores
+
+### 4. Formatação Avançada (Controles)
 
 #### Aplicar formatação em texto específico:
 
@@ -132,9 +172,12 @@ function exemplo() {
    - Selecione o peso
    - Escolha a cor
    - Ajuste o espaçamento de linha
-3. **Clique** em "Aplicar Formatação"
+3. **Clique** em "✓ Aplicar Formatação"
 
-O texto selecionado será envolvido com tags HTML inline com os estilos escolhidos.
+**Importante**: A seleção agora é mantida automaticamente! Você pode aplicar múltiplas formatações sem precisar reselecionar o texto.
+
+**No Modo Markdown**: O texto selecionado será envolvido com tags HTML inline
+**No Modo Visual**: A formatação é aplicada diretamente sem marcações visíveis
 
 #### Botões de alinhamento rápido:
 
@@ -145,11 +188,19 @@ O texto selecionado será envolvido com tags HTML inline com os estilos escolhid
 
 #### Botões de estilo rápido:
 
-- **B** Negrito (`**texto**`)
-- **I** Itálico (`*texto*`)
-- **U** Sublinhado (`<u>texto</u>`)
+- **B** Negrito (`**texto**`) ou **Ctrl+B**
+- **I** Itálico (`*texto*`) ou **Ctrl+I**
+- **U** Sublinhado (`<u>texto</u>`) ou **Ctrl+U**
 
-### 4. Exportação
+#### Atalhos de Teclado:
+
+- **Ctrl+Z**: Desfazer
+- **Ctrl+Y**: Refazer
+- **Ctrl+B**: Negrito
+- **Ctrl+I**: Itálico
+- **Ctrl+U**: Sublinhado
+
+### 5. Exportação (Melhorada!)
 
 #### PDF
 
@@ -167,17 +218,20 @@ O PDF gerado terá:
 - Tamanho A4
 - Margens de 2.5cm
 
-#### DOCX (Microsoft Word)
+#### DOCX (Microsoft Word) - MELHORADO!
 
 1. Digite o nome do arquivo no campo "nome do arquivo"
-2. Clique no botão **DOCX**
+2. Clique no botão **📝 DOCX**
 3. O arquivo será baixado automaticamente
 
-O DOCX gerado inclui:
-- Estrutura de títulos (H1, H2, H3)
+O DOCX gerado agora inclui:
+- Estrutura de títulos (H1, H2, H3, H4)
 - Parágrafos formatados
-- Listas
-- Formatação básica (negrito, itálico)
+- Listas com marcadores (bullets)
+- Listas numeradas
+- Formatação inline (negrito, itálico)
+- Blocos de código com fonte monoespaçada
+- Melhor tratamento de HTML inline
 
 ## 🎨 Fontes Disponíveis
 
@@ -228,11 +282,14 @@ md2pdf-converter/
 - **HTML5/CSS3** - Estrutura e estilo
 - **JavaScript ES6+** - Lógica da aplicação
 - **CSS Grid & Flexbox** - Layout responsivo
+- **ContentEditable API** - Editor WYSIWYG
 
 ### Bibliotecas (CDN)
 - **Marked.js 9.1.6** - Parsing Markdown → HTML
-- **docx.js 7.8.2** - Geração de arquivos DOCX
+- **docx.js 7.8.2** - Geração de arquivos DOCX melhorada
 - **FileSaver.js 2.0.5** - Download de arquivos no navegador
+- **jsPDF 2.5.1** - Geração avançada de PDF
+- **html2canvas 1.4.1** - Conversão HTML para canvas
 
 ### Fontes (Google Fonts)
 - Inter, Roboto, Open Sans, Lato, Montserrat
@@ -240,9 +297,11 @@ md2pdf-converter/
 - JetBrains Mono
 
 ### APIs Nativas
-- **Window.print()** - Geração de PDF
+- **Window.print()** - Geração de PDF via impressão
 - **File API** - Manipulação de arquivos
-- **Selection API** - Seleção de texto
+- **Selection API** - Seleção de texto inteligente
+- **Document.execCommand()** - Comandos de edição WYSIWYG
+- **ContentEditable** - Editor rico em HTML
 
 ## ⚙️ Configurações Avançadas
 
@@ -431,16 +490,58 @@ Para problemas ou dúvidas:
 ## 🚧 Roadmap
 
 Funcionalidades planejadas:
+- [x] Modo Visual WYSIWYG (v2.1)
+- [x] Sistema de Undo/Redo (v2.1)
+- [x] Seleção inteligente de texto (v2.1)
+- [x] Melhorias na geração de DOCX (v2.1)
+- [x] Atalhos de teclado (v2.1)
+- [x] Notificações visuais (v2.1)
+- [x] Contador de palavras/caracteres (v2.1)
 - [ ] Temas de cores (claro/escuro)
 - [ ] Templates prontos
 - [ ] Suporte a tabelas avançadas no DOCX
 - [ ] Exportação para HTML standalone
 - [ ] Atalhos de teclado personalizáveis
-- [ ] Histórico de formatação
 - [ ] Salvar/carregar configurações
+- [ ] Sincronização HTML → Markdown (biblioteca)
+
+## 🆕 Novidades v2.1 Pro
+
+### Principais Melhorias
+
+1. **Modo Visual (WYSIWYG)**
+   - Edite sem ver marcações Markdown ou HTML
+   - Formatação direta no texto
+   - Preview em tempo real separado
+
+2. **Sistema Completo de Undo/Redo**
+   - Ctrl+Z para desfazer
+   - Ctrl+Y para refazer
+   - Histórico de 50 estados
+
+3. **Seleção Inteligente**
+   - A seleção é mantida ao aplicar formatações
+   - Aplique múltiplas formatações sem reselecionar
+   - Restauração automática
+
+4. **Melhorias na Exportação**
+   - DOCX com suporte a listas (bullets e numeradas)
+   - Melhor parsing de formatação inline
+   - Suporte a blocos de código
+   - Bibliotecas adicionais (jsPDF, html2canvas)
+
+5. **Interface Aprimorada**
+   - Notificações visuais de ações
+   - Barra de status com estatísticas
+   - Botões com ícones
+   - Melhor feedback visual
+
+6. **Atalhos de Teclado**
+   - Ctrl+B, Ctrl+I, Ctrl+U para formatação rápida
+   - Ctrl+Z/Y para undo/redo
 
 ---
 
-**MD2PDF Converter v2.0** - Desenvolvido com foco em simplicidade e eficiência.
+**MD2PDF Converter v2.1 Pro** - Desenvolvido com foco em simplicidade, eficiência e produtividade.
 
-*Última atualização: 2024*
+*Última atualização: Janeiro 2025*
